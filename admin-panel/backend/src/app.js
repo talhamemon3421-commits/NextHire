@@ -1,27 +1,48 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import helmet from "helmet";
 
 import routes from "./routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
-import AppError from "./utils/AppError.js";
 
 const app = express();
 
-// middlewares
-app.use(cors());
-app.use(express.json());
-app.use(morgan("dev"));
+// 🔐 Security middlewares
+app.use(helmet());
 
-// routes
-app.use("/api/v1", routes);
+// 🌍 CORS config (restrict in production)
+app.use(cors({
+  origin: process.env.CLIENT_URL || "*",
+  credentials: true
+}));
 
-// 404 handler
-app.use((req, res, next) => {
-  next(new AppError("Route not found", 404));
+// 🧾 Body parser
+app.use(express.json({ limit: "10kb" }));
+
+// 📜 Logging (dev vs prod)
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+} else {
+  app.use(morgan("combined"));
+}
+
+// 🔥 Health check route
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    uptime: process.uptime()
+  });
 });
 
-// error handler (LAST)
+// 📦 API routes
+app.use("/api", routes);
+
+app.use((req, res, next) => {
+  next(new Error(`Route ${req.originalUrl} not found`));
+});
+
+// 🚨 Global error handler (must be last)
 app.use(errorHandler);
 
 export default app;
