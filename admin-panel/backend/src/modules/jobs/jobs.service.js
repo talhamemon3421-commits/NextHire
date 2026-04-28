@@ -1,7 +1,8 @@
 import Job from './jobs.model.js';
 import Employer from '../users/employer.model.js';
 import AppError from '../../utils/AppError.js';
-
+import { generateJobFromPrompt } from '../../services/Google_Gemini_API/index.js';
+import { createJobSchema } from './jobs.validation.js'; // adjust path to wherever your zod schemas live
 // ─── CREATE JOB ──────────────────────────────────────────────────────────
 // service
 export const createJobService = async (jobData, employerId) => {
@@ -218,4 +219,37 @@ export const getJobViewsService = async (jobId) => {
   }
 
   return { jobId, views: job.getViews() };
+};
+
+// ─── GENERATE JOB FROM AI PROMPT ─────────────────────────────────────────
+export const generateJobFromPromptService = async (prompt, employerId) => {
+  if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 10) {
+    throw new AppError('Prompt must be at least 10 characters', 400, 'INVALID_PROMPT');
+  }
+
+  let generatedData;
+
+  try {
+    generatedData = await generateJobFromPrompt(prompt.trim());
+  } catch (err) {
+    console.error('Gemini error:', err);
+    throw new AppError(
+      'AI failed to generate job data. Please refine your prompt.',
+      502,
+      'AI_GENERATION_FAILED'
+    );
+  }
+
+  // Validate the AI output against your existing Zod schema before saving
+  const parsed = createJobSchema.safeParse(generatedData);
+
+  if (!parsed.success) {
+    throw new AppError(
+      'AI returned invalid job data. Please try a more detailed prompt.',
+      422,
+      'AI_INVALID_OUTPUT'
+    );
+  }
+
+  return  parsed.data ;
 };

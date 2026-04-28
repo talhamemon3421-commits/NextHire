@@ -14,6 +14,7 @@ import {
   markAsUrgentService,
   unmarkAsUrgentService,
   getJobViewsService,
+  generateJobFromPromptService
 } from './jobs.service.js';
 
 // ─── CREATE JOB ──────────────────────────────────────────────────────────
@@ -206,5 +207,19 @@ export const getJobViewsController = catchAsync(async (req, res) => {
     success: true,
     message: 'Job views retrieved successfully',
     data: result,
+  });
+});
+
+// Controller — add to your jobs controller file
+
+export const generateJobFromPromptController = catchAsync(async (req, res) => {
+  const { prompt } = req.body;
+
+  const generatedData = await generateJobFromPromptService(prompt);
+
+  res.status(200).json({  // 200 not 201 since nothing is created
+    success: true,
+    message: 'Job data generated successfully',
+    data: generatedData,
   });
 });

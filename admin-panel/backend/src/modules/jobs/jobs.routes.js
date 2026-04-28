@@ -24,6 +24,7 @@ import {
   markAsUrgentController,
   unmarkAsUrgentController,
   getJobViewsController,
+  generateJobFromPromptController
 } from './jobs.controller.js';
 
 // ─── Routes ──────────────────────────────────────────────────────────────
@@ -131,6 +132,14 @@ router.patch(
   authMiddleware,
   requireVerifiedEmployer,
   unmarkAsUrgentController
+);
+
+// POST /jobs/generate  — AI-powered job generation
+router.post(
+  '/generate',
+  authMiddleware,
+  requireVerifiedEmployer,
+  generateJobFromPromptController  // No Zod validate() here — AI output is validated inside the service
 );
 
 export default router;
