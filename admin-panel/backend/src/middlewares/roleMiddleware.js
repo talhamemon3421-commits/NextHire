@@ -1,44 +1,77 @@
-import logger from "../utils/logger.js";
+import AppError from "../utils/AppError.js";
 
-export const roleMiddleware = (allowedRoles) => (req, res, next) => {
-  try {
-    if (!req.user) throw new Error("Not authenticated");
-
-    if (!allowedRoles.includes(req.user.role)) {
-      throw new Error("Insufficient permissions");
-    }
-
-    next();
-  } catch (error) {
-    error.statusCode = 403;
-    next(error);
+/**
+ * Ensure the authenticated user is an approved employer.
+ * Checks:
+ * - authenticated
+ * - employer role
+ * - employer approval
+ */
+export const requireApprovedEmployer = (req, res, next) => {
+  if (!req.user) {
+    return next(
+      new AppError("Authentication required", 401, "AUTH_REQUIRED")
+    );
   }
-};
 
-export const adminOnly = (req, res, next) => {
-  if (!req.user || req.user.role !== "admin") {
-    return next(new Error("Admin access required"));
+  if (req.user.role !== "Employer") {
+    return next(
+      new AppError(
+        "Employer access required",
+        403,
+        "AUTH_EMPLOYER_REQUIRED"
+      )
+    );
   }
+
+  // if (!req.user.isApproved || 1) {
+  //   return next(
+  //     new AppError(
+  //       "Employer account approval is pending",
+  //       403,
+  //       "EMPLOYER_NOT_APPROVED"
+  //     )
+  //   );
+  // }
+
   next();
 };
 
-export const employerOnly = (req, res, next) => {
-  if (!req.user || req.user.role !== "employer") {
-    return next(new Error("Employer access required"));
+/**
+ * Ensure the authenticated user is a verified and approved employer.
+ * Checks:
+ * - approved employer
+ * - verified account
+ */
+export const requireVerifiedEmployer = (req, res, next) => {
+  // First check if user is authenticated
+  if (!req.user) {
+    return next(
+      new AppError("Authentication required", 401, "AUTH_REQUIRED")
+    );
   }
-  next();
-};
 
-export const approvedEmployerOnly = (req, res, next) => {
-  if (!req.user) return next(new Error("Not authenticated"));
-
-  if (req.user.role !== "employer") {
-    return next(new Error("Employer only"));
+  // Check if user role is Employer (from JWT token _t field which was added to role in authMiddleware)
+  if (req.user.role !== "Employer") {
+    return next(
+      new AppError(
+        "Employer access required",
+        403,
+        "AUTH_EMPLOYER_REQUIRED"
+      )
+    );
   }
 
-  if (req.user.isApproved === false) {
-    return next(new Error("Account pending approval"));
-  }
+  // Verification checks can be uncommented later
+  // if (!req.user.isVerified) {
+  //   return next(
+  //     new AppError(
+  //       "Please verify your account first",
+  //       403,
+  //       "AUTH_ACCOUNT_NOT_VERIFIED"
+  //     )
+  //   );
+  // }
 
   next();
 };

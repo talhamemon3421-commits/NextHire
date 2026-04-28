@@ -1,17 +1,18 @@
 import jwt from "jsonwebtoken";
+import AppError from "./AppError.js";
 
-export const generateAccessToken = (userId, role = "employer") =>
+export const generateAccessToken = (userId, email, role ) =>
   jwt.sign(
-    { userId, role },
+    { userId, email, role },
     process.env.JWT_ACCESS_SECRET,
     {
-      expiresIn: "30d",
+      expiresIn: process.env.JWT_ACCESS_EXPIRY || "15d",
       issuer: "nexthire-admin",
       audience: "nexthire-admin-panel",
     }
-  );
+);
 
-export const generateRefreshToken = (userId, email, role = "employer") => {
+export const generateRefreshToken = (userId, email, role) => {
   return jwt.sign(
     { userId, email, role, type: "refresh" },
     process.env.JWT_REFRESH_SECRET,
@@ -45,7 +46,20 @@ export const decodeToken = (token) => jwt.decode(token);
  * @returns {Object} { accessToken, refreshToken }
  */
 export const buildTokenPair = (user) => {
-  const accessToken = generateAccessToken(user._id.toString(), user.email, user.role);
-  const refreshToken = generateRefreshToken(user._id.toString(), user.email, user.role);
+  const role = user.__t;
+  console.log(role);
+  const accessToken = generateAccessToken(user._id.toString(), user.email, role);
+  const refreshToken = generateRefreshToken(user._id.toString(), user.email, role);
   return { accessToken, refreshToken };
+};
+
+export const verifyToken = (token) => {
+  try {
+    return jwt.verify(token, process.env.JWT_ACCESS_SECRET, {
+      issuer: "nexthire-admin",
+      audience: "nexthire-admin-panel",
+    });
+  } catch (error) {
+    throw new AppError("Invalid or expired token", 401, "TOKEN_VERIFICATION_FAILED");
+  }
 };

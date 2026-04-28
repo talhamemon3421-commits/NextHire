@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import BaseUser from "../users/baseUser.model.js"; // Base + discriminator
 import Employer from "../users/employer.model.js"; // For registration
-import { buildTokenPair } from "../../utils/tokenUtils.js";
+import { buildTokenPair, verifyToken } from "../../utils/tokenUtils.js";
 import AppError from "../../utils/AppError.js";
 
 // ─── LOGIN ─────────────────────────────────────────────────────────────
@@ -49,4 +49,20 @@ export const login = async ({ email, password }) => {
   delete userObj.password;
 
   return { user: userObj, ...tokens };
+};
+
+// ─── GET ME ─────────────────────────────────────────────────────────────
+/**
+ * Get current user data (employer only)
+ */
+export const getMeService = async (authorizationHeader) => {
+  const token = authorizationHeader?.split(" ")[1];
+
+  if (!token) {
+    throw new AppError("Authorization token is missing", 401);
+  }
+
+  const decoded = verifyToken(token);
+
+  return decoded;
 };

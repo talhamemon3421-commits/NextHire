@@ -1,9 +1,11 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 
-import { loginController } from "./auth.controller.js";
+import { loginController, getMe } from "./auth.controller.js";
 import { validate } from "../../middlewares/validationMiddleware.js";
 import { loginSchema } from "./auth.validation.js";
+import { authMiddleware } from "../../middlewares/authMiddleware.js";
+import { requireVerifiedEmployer } from "../../middlewares/roleMiddleware.js";
 
 // ─── Login Rate Limiter ─────────────────────────────
 const loginRateLimiter = rateLimit({
@@ -27,5 +29,6 @@ router.post(
   validate(loginSchema),
   loginController
 );
+router.get("/getMe", authMiddleware, requireVerifiedEmployer, getMe);
 
 export default router;

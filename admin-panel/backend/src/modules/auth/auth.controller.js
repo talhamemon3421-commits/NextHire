@@ -1,5 +1,7 @@
-import { login} from "./auth.service.js";
+import { login, getMeService } from "./auth.service.js";
 import { catchAsync } from "../../utils/catchAsync.js";
+
+
 
 // ─── LOGIN ─────────────────────────
 export const loginController = catchAsync(async (req, res) => {
@@ -23,5 +25,16 @@ export const loginController = catchAsync(async (req, res) => {
     success: true,
     message: "Login successful",
     data: { user, accessToken },
+  });
+});
+
+// ─── GET ME ─────────────────────────
+export const getMe = catchAsync(async (req, res) => {
+  const userDetails = await getMeService(req.headers.authorization);
+
+  res.status(200).json({
+    success: true,
+    message: "User details retrieved successfully",
+    data: userDetails,
   });
 });

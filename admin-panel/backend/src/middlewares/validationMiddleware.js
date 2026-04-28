@@ -1,7 +1,6 @@
 import AppError from "../utils/AppError.js";
-import { catchAsync } from "../utils/catchAsync.js";
 
-export const validate = (schema) => catchAsync(async (req, res, next) => {
+export const validate = (schema) => async (req, res, next) => {
   try {
     // Zod parse (throws on validation error)
     const validatedData = await schema.parseAsync(req.body);
@@ -13,8 +12,8 @@ export const validate = (schema) => catchAsync(async (req, res, next) => {
       const fieldErrors = error.errors
         .map((err) => `${err.path.join(".")}: ${err.message}`)
         .join("; ");
-      throw new AppError(fieldErrors, 400, "VALIDATION_ERROR");
+      return next(new AppError(fieldErrors, 400, "VALIDATION_ERROR"));
     }
-    throw new AppError(error.message || "Validation failed", 400, "VALIDATION_ERROR");
+    return next(new AppError(error.message || "Validation failed", 400, "VALIDATION_ERROR"));
   }
-});
+};
