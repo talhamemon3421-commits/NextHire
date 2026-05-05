@@ -4,6 +4,7 @@ import { authMiddleware } from '../../middlewares/authMiddleware.js';
 import { requireVerifiedEmployer } from '../../middlewares/roleMiddleware.js';
 import {
   createJobSchema,
+  updateJobSchema,
   addRequirementSchema,
   addBenefitSchema,
   setDeadlineSchema,
@@ -15,6 +16,7 @@ import {
   getAllActiveJobsController,
   getMyJobsController,
   deleteJobController,
+  updateJobController,
   activateJobController,
   deactivateJobController,
   addRequirementController,
@@ -64,6 +66,15 @@ router.delete(
   authMiddleware,
   requireVerifiedEmployer,
   deleteJobController
+);
+
+// Update job — partial update, any combination of fields (employer only)
+router.patch(
+  '/:jobId',
+  authMiddleware,
+  requireVerifiedEmployer,
+  validate(updateJobSchema),
+  updateJobController
 );
 
 // Activate job (employer only)

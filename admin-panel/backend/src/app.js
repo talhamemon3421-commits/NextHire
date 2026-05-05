@@ -9,11 +9,13 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 const app = express();
 
 // 🔐 Security middlewares
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // 🌍 CORS config (restrict in production)
 app.use(cors({
-  origin: process.env.CLIENT_URL || "*",
+  origin: (origin, callback) => callback(null, true),
   credentials: true
 }));
 

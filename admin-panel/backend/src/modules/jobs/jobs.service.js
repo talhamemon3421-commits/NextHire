@@ -221,6 +221,31 @@ export const getJobViewsService = async (jobId) => {
   return { jobId, views: job.getViews() };
 };
 
+// ─── UPDATE JOB ───────────────────────────────────────────────────────────
+export const updateJobService = async (jobId, updateData, employerId) => {
+  // Guard: reject empty payloads before hitting the DB
+  if (!updateData || Object.keys(updateData).length === 0) {
+    throw new AppError('No fields provided to update', 400, 'EMPTY_UPDATE_PAYLOAD');
+  }
+
+  const job = await Job.findById(jobId);
+
+  if (!job) {
+    throw new AppError('Job not found', 404, 'JOB_NOT_FOUND');
+  }
+
+  if (job.postedBy.toString() !== employerId.toString()) {
+    throw new AppError(
+      'You are not authorized to update this job',
+      403,
+      'UNAUTHORIZED_JOB_UPDATE'
+    );
+  }
+
+  const updatedJob = await Job.updateJob(jobId, updateData);
+  return updatedJob;
+};
+
 // ─── GENERATE JOB FROM AI PROMPT ─────────────────────────────────────────
 export const generateJobFromPromptService = async (prompt, employerId) => {
   if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 10) {

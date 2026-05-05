@@ -52,7 +52,7 @@ export const requireVerifiedEmployer = (req, res, next) => {
   }
 
   // Check if user role is Employer (from JWT token _t field which was added to role in authMiddleware)
-  if (req.user.role !== "Employer") {
+  if (String(req.user.role).toLowerCase() !== "employer") {
     return next(
       new AppError(
         "Employer access required",

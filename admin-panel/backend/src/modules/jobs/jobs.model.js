@@ -95,6 +95,8 @@ const jobSchema = new Schema({
 
   isActive: { type: Boolean, default: true },
 
+  applicationCount: { type: Number, default: 0 },
+
   views: { type: Number, default: 0 }
 
 }, { timestamps: true });

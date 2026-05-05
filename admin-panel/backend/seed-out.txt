@@ -1,0 +1,6 @@
+◇ injected env (14) from .env // tip: ⌘ suppress logs { quiet: true }
+Connecting to MongoDB...
+Connected successfully!
+Using Employer ID: 69f215633cdf9a4c134fe4f6 (NextHire Technologies)
+Inserting 7 dummy jobs for BinLaden Aero...
+✅ Passed! Inserted 7 jobs successfully.

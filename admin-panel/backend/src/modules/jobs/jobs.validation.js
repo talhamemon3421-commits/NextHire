@@ -120,19 +120,48 @@ export const extendDeadlineSchema = z.object({
 
 // ─── Update Job Schema ────────────────────────────────────────────────────
 export const updateJobSchema = z.object({
-  title: z.string().min(3).max(150).trim().optional(),
-  description: z.string().min(20).max(5000).trim().optional(),
-  jobType: z.enum(['full-time', 'part-time', 'contract', 'internship', 'freelance']).optional(),
+  title: z.string().min(3, 'Title must be at least 3 characters').max(150).trim().optional(),
+  description: z.string().min(20, 'Description must be at least 20 characters').max(5000).trim().optional(),
+  jobType: z.enum(['full-time', 'part-time', 'contract', 'internship', 'freelance'], {
+    errorMap: () => ({ message: 'Invalid job type' }),
+  }).optional(),
   location: z.string().optional().nullable(),
   isRemote: z.boolean().optional(),
-  experienceLevel: z.enum(['entry', 'junior', 'mid', 'senior', 'lead']).optional(),
-  responsibilities: z.array(z.string().min(1).trim()).max(15).optional(),
-  requirements: z.array(z.string().min(1).trim()).max(15).optional(),
-  benefits: z.array(z.string().min(1).trim()).max(15).optional(),
-  skills: z.array(z.string().min(1).trim()).max(15).optional(),
+  isActive: z.boolean().optional(),
+  isUrgent: z.boolean().optional(),
+  experienceLevel: z.enum(['entry', 'junior', 'mid', 'senior', 'lead'], {
+    errorMap: () => ({ message: 'Invalid experience level' }),
+  }).optional(),
+  responsibilities: z.array(z.string().min(1).trim()).max(15, 'Cannot have more than 15 responsibilities').optional(),
+  requirements: z.array(z.string().min(1).trim()).max(15, 'Cannot have more than 15 requirements').optional(),
+  benefits: z.array(z.string().min(1).trim()).max(15, 'Cannot have more than 15 benefits').optional(),
+  skills: z.array(z.string().min(1).trim()).max(15, 'Cannot have more than 15 skills').optional(),
   salary: z.object({
     min: z.number().int().nonnegative().nullable().optional(),
     max: z.number().int().nonnegative().nullable().optional(),
     currency: z.enum(['PKR', 'USD']).optional(),
   }).optional(),
-}).partial();
+  deadline: z.string().datetime('Invalid date format').optional().nullable(),
+}).superRefine((data, ctx) => {
+  // Only enforce isRemote/location constraint when either field is in the payload
+  if ('isRemote' in data || 'location' in data) {
+    if (data.isRemote === false && !data.location) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Non-remote jobs must have a location',
+        path: ['location'],
+      });
+    }
+  }
+
+  // Only enforce salary range constraint when both sides are present
+  if (data.salary?.min != null && data.salary?.max != null) {
+    if (data.salary.max < data.salary.min) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Max salary must be greater than or equal to min salary',
+        path: ['salary'],
+      });
+    }
+  }
+});

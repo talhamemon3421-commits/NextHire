@@ -12,8 +12,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1041.0",
     "@google/genai": "^1.50.1",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -23,6 +25,7 @@
     "mongodb": "^7.2.0",
     "mongoose": "^9.5.0",
     "morgan": "^1.10.1",
+    "multer": "^2.1.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

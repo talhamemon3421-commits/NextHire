@@ -5,6 +5,7 @@ import {
   getAllActiveJobsService,
   getJobsByEmployerService,
   deleteJobService,
+  updateJobService,
   activateJobService,
   deactivateJobService,
   addRequirementService,
@@ -78,6 +79,21 @@ export const deleteJobController = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     message: result.message,
+  });
+});
+
+// ─── UPDATE JOB ──────────────────────────────────────────────────────────
+export const updateJobController = catchAsync(async (req, res) => {
+  const { jobId } = req.params;
+  const employerId = req.user.userId;
+  const updateData = req.body;
+
+  const updatedJob = await updateJobService(jobId, updateData, employerId);
+
+  res.status(200).json({
+    success: true,
+    message: 'Job updated successfully',
+    data: updatedJob,
   });
 });
 
