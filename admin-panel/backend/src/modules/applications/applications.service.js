@@ -433,46 +433,171 @@ export const getCandidatesService = async (employerId, query = {}) => {
 
 // ─── GET EMPLOYER REPORTS & ANALYTICS ────────────────────────────────────────
 export const getEmployerReportsService = async (employerId) => {
+  const MS_IN_DAY = 1000 * 60 * 60 * 24;
+  const toDateKey = (date) => new Date(date).toISOString().slice(0, 10);
+
+  const safeRate = (num, den) => (den > 0 ? Number(((num / den) * 100).toFixed(1)) : 0);
+  const safeAvgDays = (totalMs, count) => (count > 0 ? Number((totalMs / count / MS_IN_DAY).toFixed(1)) : 0);
+
+  const buildEmptyResponse = () => ({
+    overview: {
+      activeJobs: 0,
+      totalApplications: 0,
+      interviewsScheduled: 0,
+      offersExtended: 0,
+      hiredCandidates: 0,
+      activePipelineCandidates: 0,
+      offerAcceptanceRate: 0,
+      overallConversionRate: 0,
+      avgApplicationsPerJob: 0,
+      avgTimeToHireDays: 0,
+    },
+    funnel: {
+      pending: 0,
+      reviewing: 0,
+      shortlisted: 0,
+      interview: 0,
+      offered: 0,
+      accepted: 0,
+      rejected: 0,
+    },
+    timeline: [],
+    statusVelocityDays: {
+      reviewing: 0,
+      shortlisted: 0,
+      interview: 0,
+      offered: 0,
+      accepted: 0,
+      rejected: 0,
+    },
+    conversion: {
+      pendingToReviewing: 0,
+      reviewingToShortlisted: 0,
+      shortlistedToInterview: 0,
+      interviewToOffered: 0,
+      offeredToAccepted: 0,
+      acceptancePerApplication: 0,
+      rejectionPerApplication: 0,
+    },
+    bottlenecks: {
+      biggestDropStage: 'none',
+      biggestDropRate: 0,
+      averageDecisionDays: 0,
+    },
+    distributions: {
+      byJobType: [],
+      byExperienceLevel: [],
+    },
+    skillsDemand: [],
+    jobPerformance: [],
+    timeToHireDays: 0,
+  });
+
   // 1. Get all jobs belonging to the employer
-  const jobs = await Job.find({ postedBy: employerId }).select('_id title').lean();
+  const jobs = await Job.find({ postedBy: employerId })
+    .select('_id title views applicationCount jobType experienceLevel skills createdAt isActive')
+    .lean();
   const jobIds = jobs.map((j) => j._id);
 
   if (!jobIds.length) {
-    return {
-      overview: { activeJobs: 0, totalApplications: 0, interviewsScheduled: 0, offersExtended: 0 },
-      funnel: { pending: 0, reviewing: 0, shortlisted: 0, interview: 0, accepted: 0, rejected: 0 },
-      jobPerformance: [],
-      timeToHireDays: 0,
-    };
+    return buildEmptyResponse();
   }
 
   // 2. Fetch all applications for these jobs
   const applications = await Application.find({ job: { $in: jobIds } }).lean();
 
-  const funnel = { pending: 0, reviewing: 0, shortlisted: 0, interview: 0, accepted: 0, rejected: 0 };
+  const funnel = { pending: 0, reviewing: 0, shortlisted: 0, interview: 0, offered: 0, accepted: 0, rejected: 0 };
   const jobPerfMap = new Map();
-  let totalHireTimeMs = 0;
-  let hiredCount = 0;
+  const timelineMap = new Map();
+
+  const velocityAccumulator = {
+    reviewing: { totalMs: 0, count: 0 },
+    shortlisted: { totalMs: 0, count: 0 },
+    interview: { totalMs: 0, count: 0 },
+    offered: { totalMs: 0, count: 0 },
+    accepted: { totalMs: 0, count: 0 },
+    rejected: { totalMs: 0, count: 0 },
+  };
+
+  const stageCounts = {
+    pending: 0,
+    reviewing: 0,
+    shortlisted: 0,
+    interview: 0,
+    offered: 0,
+    accepted: 0,
+    rejected: 0,
+  };
+
+  const timeToHireAccumulator = { totalMs: 0, count: 0 };
+  const decisionAccumulator = { totalMs: 0, count: 0 };
+
+  const byJobTypeMap = new Map();
+  const byExperienceMap = new Map();
+  const skillsDemandMap = new Map();
 
   jobs.forEach(j => {
+    if (j.jobType) byJobTypeMap.set(j.jobType, (byJobTypeMap.get(j.jobType) || 0) + 1);
+    if (j.experienceLevel) byExperienceMap.set(j.experienceLevel, (byExperienceMap.get(j.experienceLevel) || 0) + 1);
+
+    const jobSkills = Array.isArray(j.skills) ? j.skills : [];
+    jobSkills.forEach((skill) => {
+      if (!skill) return;
+      const key = String(skill).trim().toLowerCase();
+      if (!key) return;
+      skillsDemandMap.set(key, (skillsDemandMap.get(key) || 0) + 1);
+    });
+
     jobPerfMap.set(j._id.toString(), {
       jobId: j._id.toString(),
       title: j.title,
-      views: 0, // Placeholder
+      views: j.views || 0,
       applications: 0,
       shortlisted: 0,
       interviews: 0,
+      offered: 0,
       accepted: 0,
       rejected: 0,
+      recentApplications7d: 0,
+      recentHires30d: 0,
+      avgTimeToDecisionDays: 0,
+      shortlistingRate: 0,
+      interviewRate: 0,
+      offerRate: 0,
+      conversionRate: 0,
+      acceptanceRate: 0,
     });
   });
 
+  const now = new Date();
+  const timelineDays = 30;
+  const cutoff30d = new Date(now.getTime() - 30 * MS_IN_DAY);
+  const cutoff7d = new Date(now.getTime() - 7 * MS_IN_DAY);
+
+  for (let i = timelineDays - 1; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * MS_IN_DAY);
+    const key = toDateKey(d);
+    timelineMap.set(key, {
+      date: key,
+      applications: 0,
+      interviews: 0,
+      offers: 0,
+      hires: 0,
+      rejections: 0,
+    });
+  }
+
   for (const app of applications) {
     const jobId = app.job.toString();
-    const status = app.status;
+    const status = app.status || 'pending';
+    const createdAt = new Date(app.createdAt);
+    const statusHistory = Array.isArray(app.statusHistory) ? app.statusHistory : [];
+    const timelineKey = toDateKey(createdAt);
 
     // Funnel counts
     if (funnel[status] !== undefined) funnel[status]++;
+    if (stageCounts[status] !== undefined) stageCounts[status]++;
+    if (timelineMap.has(timelineKey)) timelineMap.get(timelineKey).applications++;
 
     // Job Performance counts
     if (jobPerfMap.has(jobId)) {
@@ -480,48 +605,192 @@ export const getEmployerReportsService = async (employerId) => {
       perf.applications++;
       if (status === 'shortlisted') perf.shortlisted++;
       if (status === 'interview') perf.interviews++;
+      if (status === 'offered') perf.offered++;
       if (status === 'accepted') perf.accepted++;
       if (status === 'rejected') perf.rejected++;
+      if (createdAt >= cutoff7d) perf.recentApplications7d++;
+      if (status === 'accepted' && createdAt >= cutoff30d) perf.recentHires30d++;
     }
 
-    // Time-to-Hire calculation
-    if (status === 'accepted' && app.statusHistory && app.statusHistory.length > 0) {
-      // Find the first event (usually pending/created)
-      const firstEvent = app.statusHistory.reduce((earliest, h) => 
-        new Date(h.createdAt) < new Date(earliest.createdAt) ? h : earliest
-      , app.statusHistory[0]);
-      
-      const acceptedEvent = app.statusHistory.find(h => h.status === 'accepted');
-      
-      if (firstEvent && acceptedEvent) {
-        const timeToHire = new Date(acceptedEvent.createdAt) - new Date(firstEvent.createdAt);
-        if (timeToHire > 0) {
-          totalHireTimeMs += timeToHire;
-          hiredCount++;
+    const eventByStatus = new Map();
+    for (const h of statusHistory) {
+      if (!h?.status || !h?.createdAt) continue;
+      if (!eventByStatus.has(h.status)) {
+        eventByStatus.set(h.status, new Date(h.createdAt));
+      }
+    }
+
+    ['reviewing', 'shortlisted', 'interview', 'offered', 'accepted', 'rejected'].forEach((targetStatus) => {
+      if (!eventByStatus.has(targetStatus)) return;
+      const delta = eventByStatus.get(targetStatus) - createdAt;
+      if (delta > 0 && velocityAccumulator[targetStatus]) {
+        velocityAccumulator[targetStatus].totalMs += delta;
+        velocityAccumulator[targetStatus].count += 1;
+      }
+    });
+
+    const firstDecisionDate =
+      eventByStatus.get('accepted') ||
+      eventByStatus.get('rejected') ||
+      eventByStatus.get('offered');
+
+    if (firstDecisionDate) {
+      const decisionMs = firstDecisionDate - createdAt;
+      if (decisionMs > 0) {
+        decisionAccumulator.totalMs += decisionMs;
+        decisionAccumulator.count += 1;
+      }
+    }
+
+    if (eventByStatus.get('interview')) {
+      const interviewKey = toDateKey(eventByStatus.get('interview'));
+      if (timelineMap.has(interviewKey)) timelineMap.get(interviewKey).interviews++;
+    }
+
+    if (eventByStatus.get('offered')) {
+      const offerKey = toDateKey(eventByStatus.get('offered'));
+      if (timelineMap.has(offerKey)) timelineMap.get(offerKey).offers++;
+    }
+
+    if (eventByStatus.get('accepted')) {
+      const hireKey = toDateKey(eventByStatus.get('accepted'));
+      if (timelineMap.has(hireKey)) timelineMap.get(hireKey).hires++;
+
+      const timeToHire = eventByStatus.get('accepted') - createdAt;
+      if (timeToHire > 0) {
+        timeToHireAccumulator.totalMs += timeToHire;
+        timeToHireAccumulator.count += 1;
+      }
+    }
+
+    if (eventByStatus.get('rejected')) {
+      const rejKey = toDateKey(eventByStatus.get('rejected'));
+      if (timelineMap.has(rejKey)) timelineMap.get(rejKey).rejections++;
+    }
+
+    if (jobPerfMap.has(jobId)) {
+      const perf = jobPerfMap.get(jobId);
+      const decisionDate =
+        eventByStatus.get('accepted') ||
+        eventByStatus.get('rejected') ||
+        eventByStatus.get('offered');
+
+      if (decisionDate) {
+        const decisionMs = decisionDate - createdAt;
+        if (decisionMs > 0) {
+          if (!perf._decisionMs) {
+            perf._decisionMs = 0;
+            perf._decisionCount = 0;
+          }
+          perf._decisionMs += decisionMs;
+          perf._decisionCount += 1;
         }
       }
     }
   }
 
-  const overview = {
-    activeJobs: jobs.length,
-    totalApplications: applications.length,
-    interviewsScheduled: funnel.interview,
-    offersExtended: funnel.accepted,
+  const totalApplications = applications.length;
+  const interviewsScheduled = funnel.interview;
+  const offersExtended = funnel.offered + funnel.accepted;
+  const hiredCandidates = funnel.accepted;
+  const activePipelineCandidates = funnel.reviewing + funnel.shortlisted + funnel.interview + funnel.offered;
+
+  const timeline = Array.from(timelineMap.values());
+
+  const statusVelocityDays = {
+    reviewing: safeAvgDays(velocityAccumulator.reviewing.totalMs, velocityAccumulator.reviewing.count),
+    shortlisted: safeAvgDays(velocityAccumulator.shortlisted.totalMs, velocityAccumulator.shortlisted.count),
+    interview: safeAvgDays(velocityAccumulator.interview.totalMs, velocityAccumulator.interview.count),
+    offered: safeAvgDays(velocityAccumulator.offered.totalMs, velocityAccumulator.offered.count),
+    accepted: safeAvgDays(velocityAccumulator.accepted.totalMs, velocityAccumulator.accepted.count),
+    rejected: safeAvgDays(velocityAccumulator.rejected.totalMs, velocityAccumulator.rejected.count),
   };
 
-  const timeToHireDays = hiredCount > 0 ? (totalHireTimeMs / hiredCount) / (1000 * 60 * 60 * 24) : 0;
-  
+  const conversion = {
+    pendingToReviewing: safeRate(stageCounts.reviewing, stageCounts.pending),
+    reviewingToShortlisted: safeRate(stageCounts.shortlisted, stageCounts.reviewing),
+    shortlistedToInterview: safeRate(stageCounts.interview + stageCounts.offered + stageCounts.accepted, stageCounts.shortlisted),
+    interviewToOffered: safeRate(stageCounts.offered + stageCounts.accepted, stageCounts.interview),
+    offeredToAccepted: safeRate(stageCounts.accepted, stageCounts.offered + stageCounts.accepted),
+    acceptancePerApplication: safeRate(stageCounts.accepted, totalApplications),
+    rejectionPerApplication: safeRate(stageCounts.rejected, totalApplications),
+  };
+
+  const dropOffByStage = [
+    { stage: 'pending->reviewing', rate: Math.max(0, 100 - conversion.pendingToReviewing) },
+    { stage: 'reviewing->shortlisted', rate: Math.max(0, 100 - conversion.reviewingToShortlisted) },
+    { stage: 'shortlisted->interview', rate: Math.max(0, 100 - conversion.shortlistedToInterview) },
+    { stage: 'interview->offered', rate: Math.max(0, 100 - conversion.interviewToOffered) },
+    { stage: 'offered->accepted', rate: Math.max(0, 100 - conversion.offeredToAccepted) },
+  ];
+  const topDrop = dropOffByStage.sort((a, b) => b.rate - a.rate)[0] || { stage: 'none', rate: 0 };
+
+  const bottlenecks = {
+    biggestDropStage: topDrop.stage,
+    biggestDropRate: Number(topDrop.rate.toFixed(1)),
+    averageDecisionDays: safeAvgDays(decisionAccumulator.totalMs, decisionAccumulator.count),
+  };
+
+  const distributions = {
+    byJobType: Array.from(byJobTypeMap.entries()).map(([label, count]) => ({
+      label,
+      count,
+      percentage: safeRate(count, jobs.length),
+    })),
+    byExperienceLevel: Array.from(byExperienceMap.entries()).map(([label, count]) => ({
+      label,
+      count,
+      percentage: safeRate(count, jobs.length),
+    })),
+  };
+
+  const skillsDemand = Array.from(skillsDemandMap.entries())
+    .map(([skill, demandScore]) => ({ skill, demandScore }))
+    .sort((a, b) => b.demandScore - a.demandScore)
+    .slice(0, 12);
+
+  const overview = {
+    activeJobs: jobs.length,
+    totalApplications,
+    interviewsScheduled,
+    offersExtended,
+    hiredCandidates,
+    activePipelineCandidates,
+    offerAcceptanceRate: safeRate(hiredCandidates, offersExtended),
+    overallConversionRate: safeRate(hiredCandidates, totalApplications),
+    avgApplicationsPerJob: Number((totalApplications / jobs.length).toFixed(1)),
+    avgTimeToHireDays: safeAvgDays(timeToHireAccumulator.totalMs, timeToHireAccumulator.count),
+  };
+
+  const timeToHireDays = safeAvgDays(timeToHireAccumulator.totalMs, timeToHireAccumulator.count);
+
   const jobPerformance = Array.from(jobPerfMap.values()).map(jp => {
-    // Calculate conversion rate (accepted / applications)
-    jp.conversionRate = jp.applications > 0 ? ((jp.accepted / jp.applications) * 100).toFixed(1) : 0;
+    const denominator = jp.applications;
+    jp.shortlistingRate = safeRate(jp.shortlisted, denominator);
+    jp.interviewRate = safeRate(jp.interviews + jp.offered + jp.accepted, denominator);
+    jp.offerRate = safeRate(jp.offered + jp.accepted, denominator);
+    jp.conversionRate = safeRate(jp.accepted, denominator);
+    jp.acceptanceRate = safeRate(jp.accepted, jp.offered + jp.accepted);
+
+    if (jp._decisionCount > 0) {
+      jp.avgTimeToDecisionDays = safeAvgDays(jp._decisionMs, jp._decisionCount);
+    }
+
+    delete jp._decisionMs;
+    delete jp._decisionCount;
     return jp;
   });
 
   return {
     overview,
     funnel,
+    timeline,
+    statusVelocityDays,
+    conversion,
+    bottlenecks,
+    distributions,
+    skillsDemand,
     jobPerformance: jobPerformance.sort((a, b) => b.applications - a.applications),
-    timeToHireDays: parseFloat(timeToHireDays.toFixed(1)),
+    timeToHireDays,
   };
 };

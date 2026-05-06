@@ -1,6 +1,8 @@
 import React, { useState, FormEvent } from "react";
-import { Sparkles, X, Loader2 } from "lucide-react";
+import { Sparkles, X, Loader2, Rocket, Zap, CheckCircle2 } from "lucide-react";
 import { generateJobFromPrompt, createJob, type CreateJobPayload } from "../api/jobsApi";
+import { cn } from "@/shared/lib/cn";
+import { Button } from "@/shared/components/ui/Button";
 
 interface PostJobModalProps {
   onClose: () => void;
@@ -93,134 +95,151 @@ export function PostJobModal({ onClose }: PostJobModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-        
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="relative bg-card rounded-[2.5rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh] border border-border/50">
+
         {isSubmitting && !isSuccess && (
-          <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur flex flex-col items-center justify-center rounded-xl">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
-            <div className="text-lg font-bold text-slate-800">Publishing Job...</div>
-            <div className="text-sm text-slate-500 mt-1">Please wait while we create the posting.</div>
+          <div className="absolute inset-0 z-[110] bg-background/90 backdrop-blur-lg flex flex-col items-center justify-center animate-in fade-in duration-500">
+            <div className="relative w-20 h-20 mb-8">
+              <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <Rocket className="absolute inset-0 m-auto w-8 h-8 text-primary animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-black tracking-tight text-foreground uppercase tracking-[0.2em]">Publishing Listing</h3>
+            <p className="text-sm text-muted-foreground font-medium mt-2">Deploying your job to the talent marketplace...</p>
           </div>
         )}
 
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <h2 className="text-xl font-bold text-slate-800">Post a new job</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition">
-            <X className="w-5 h-5" />
+        {isSuccess && (
+          <div className="absolute inset-0 z-[110] bg-emerald-500 flex flex-col items-center justify-center text-white animate-in zoom-in duration-500">
+            <CheckCircle2 className="w-24 h-24 mb-6 animate-bounce" />
+            <h3 className="text-4xl font-black tracking-tighter">SUCCESSFULLY POSTED!</h3>
+            <p className="text-lg font-medium mt-2 opacity-90">Redirecting to your dashboard...</p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between p-8 border-b border-border/50 bg-accent/20">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20">
+              <Zap className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black tracking-tight">Deploy New Position</h2>
+              <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mt-0.5">Talent Acquisition Module</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-3 text-muted-foreground hover:bg-accent rounded-2xl transition-all duration-300 hover:rotate-90">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
           {error && (
-            <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
+            <div className="p-4 bg-red-500/10 text-red-500 rounded-2xl text-sm font-bold border border-red-500/20 animate-in shake duration-500">
               {error}
             </div>
           )}
 
-          {isSuccess && (
-            <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 rounded-lg text-sm border border-emerald-200 flex flex-col items-center justify-center text-center">
-              <span className="font-bold text-base mb-1">🎉 Job posted successfully!</span>
-              <span>Redirecting to your dashboard...</span>
+          <div className="relative group overflow-hidden rounded-[2rem] border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 shadow-sm">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+              <Sparkles className="w-32 h-32 text-primary" />
             </div>
-          )}
-
-          {/* AI Auto-fill Section */}
-          <div className="bg-[#FFF9EA] border border-orange-100 rounded-xl p-4 mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-orange-500" />
-              <span className="text-sm font-bold text-slate-800">AI Auto-fill — Describe the role and let AI complete the form</span>
-            </div>
-            <div className="flex gap-3">
-              <input 
-                type="text" 
-                placeholder="e.g. Senior Flight Instructor for a training center in Abb"
-                className="flex-1 bg-white border border-orange-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAutoFill()}
-              />
-              <button 
-                onClick={handleAutoFill}
-                disabled={isGenerating}
-                className="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition disabled:opacity-50 flex items-center gap-2"
-              >
-                {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
-                <Sparkles className="w-4 h-4" /> Auto-fill
-              </button>
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="bg-primary px-3 py-1 rounded-full text-[10px] font-black text-primary-foreground uppercase tracking-widest shadow-lg shadow-primary/20">AI Engine v2.0</div>
+                <span className="text-xs font-bold text-muted-foreground">Smart Auto-fill Description</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="Describe the role in one sentence (e.g. Senior Frontend Architect for a Fintech startup)..."
+                  className="flex-1 bg-card border border-border/50 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner outline-none"
+                  value={prompt}
+                  onChange={e => setPrompt(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAutoFill()}
+                />
+                <Button
+                  onClick={handleAutoFill}
+                  disabled={isGenerating}
+                  className="rounded-2xl h-auto py-4 px-8 font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all gap-3"
+                >
+                  {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                  GENERATE
+                </Button>
+              </div>
             </div>
           </div>
 
-          <form id="job-form" onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Job title</label>
-              <input required type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="e.g. Senior Flight Instructor" />
+          <form id="job-form" onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Position Title</label>
+              <input required type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-accent/20 border border-border rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none" placeholder="e.g. Senior Product Designer" />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Experience Level</label>
-                <select value={experienceLevel} onChange={e => setExperienceLevel(e.target.value as any)} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Experience Level</label>
+                <select value={experienceLevel} onChange={e => setExperienceLevel(e.target.value as any)} className="w-full bg-accent/20 border border-border rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none appearance-none cursor-pointer">
                   <option value="entry">Entry Level</option>
-                  <option value="junior">Junior</option>
-                  <option value="mid">Mid Level</option>
-                  <option value="senior">Senior</option>
-                  <option value="lead">Lead/Manager</option>
+                  <option value="junior">Junior Associate</option>
+                  <option value="mid">Mid-Senior Level</option>
+                  <option value="senior">Senior Staff</option>
+                  <option value="lead">Management / Lead</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Employment type</label>
-                <select value={jobType} onChange={e => setJobType(e.target.value as any)} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
-                  <option value="full-time">Full-time</option>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Employment Type</label>
+                <select value={jobType} onChange={e => setJobType(e.target.value as any)} className="w-full bg-accent/20 border border-border rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none appearance-none cursor-pointer">
+                  <option value="full-time">Full-time Regular</option>
                   <option value="part-time">Part-time</option>
-                  <option value="contract">Contract</option>
-                  <option value="internship">Internship</option>
-                  <option value="freelance">Freelance</option>
+                  <option value="contract">Fixed Contract</option>
+                  <option value="internship">Internship Program</option>
+                  <option value="freelance">Freelance / Project</option>
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Location</label>
-                <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Abbottabad, KPK" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Job Location</label>
+                <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-accent/20 border border-border rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none" placeholder="e.g. Islamabad (or leave for Remote)" />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Salary range (PKR)</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" value={salaryMin} onChange={e => setSalaryMin(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Min" />
-                  <span className="text-slate-400">-</span>
-                  <input type="number" value={salaryMax} onChange={e => setSalaryMax(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Max" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Annual Compensation (PKR)</label>
+                <div className="flex items-center gap-3">
+                  <input type="number" value={salaryMin} onChange={e => setSalaryMin(e.target.value)} className="w-full bg-accent/20 border border-border rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none" placeholder="Min" />
+                  <div className="w-4 h-0.5 bg-border rounded-full shrink-0" />
+                  <input type="number" value={salaryMax} onChange={e => setSalaryMax(e.target.value)} className="w-full bg-accent/20 border border-border rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none" placeholder="Max" />
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Job description</label>
-              <textarea required rows={4} value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none" placeholder="Describe responsibilities, qualifications, and requirements..." />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Detailed Description</label>
+              <textarea required rows={6} value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-accent/20 border border-border rounded-[2rem] px-6 py-5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner outline-none resize-none leading-relaxed" placeholder="Elaborate on the role, team dynamics, and expectations..." />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Required qualifications</label>
-                <textarea rows={4} value={requirements} onChange={e => setRequirements(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none" placeholder="One per line" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Candidate Qualifications</label>
+                <textarea rows={6} value={requirements} onChange={e => setRequirements(e.target.value)} className="w-full bg-accent/20 border border-border rounded-[2rem] px-6 py-5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner outline-none resize-none leading-relaxed" placeholder="One qualification per line..." />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Key responsibilities</label>
-                <textarea rows={4} value={responsibilities} onChange={e => setResponsibilities(e.target.value)} className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none" placeholder="One per line" />
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Core Responsibilities</label>
+                <textarea rows={6} value={responsibilities} onChange={e => setResponsibilities(e.target.value)} className="w-full bg-accent/20 border border-border rounded-[2rem] px-6 py-5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner outline-none resize-none leading-relaxed" placeholder="One responsibility per line..." />
               </div>
             </div>
           </form>
         </div>
 
-        <div className="p-5 border-t border-slate-100 flex items-center justify-center gap-4 bg-slate-50/50">
-          <button onClick={onClose} type="button" className="px-6 py-2.5 border border-slate-200 text-slate-600 font-bold text-sm rounded-lg hover:bg-slate-100 transition">
-            Save as draft
+        <div className="p-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-end gap-4 bg-accent/30">
+          <button onClick={onClose} type="button" className="w-full sm:w-auto px-8 py-4 text-muted-foreground font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-accent transition-colors">
+            Discard & Exit
           </button>
-          <button form="job-form" type="submit" disabled={isSubmitting || isSuccess} className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2">
-            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isSuccess ? "Published!" : "Publish posting"}
-          </button>
+          <Button form="job-form" type="submit" disabled={isSubmitting || isSuccess} className="w-full sm:w-auto h-auto py-4 px-10 rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 transition-all border-0">
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Rocket className="w-5 h-5 mr-2" />}
+            DEPLOY POSTING
+          </Button>
         </div>
       </div>
     </div>

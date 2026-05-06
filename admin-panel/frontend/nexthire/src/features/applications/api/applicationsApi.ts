@@ -6,6 +6,7 @@ export type ApplicationStatus =
   | "reviewing"
   | "shortlisted"
   | "interview"
+  | "offered"
   | "accepted"
   | "rejected";
 
@@ -247,9 +248,37 @@ export interface JobPerformanceData {
   applications: number;
   shortlisted: number;
   interviews: number;
+  offered: number;
   accepted: number;
   rejected: number;
-  conversionRate: string | number;
+  recentApplications7d: number;
+  recentHires30d: number;
+  avgTimeToDecisionDays: number;
+  shortlistingRate: number;
+  interviewRate: number;
+  offerRate: number;
+  conversionRate: number;
+  acceptanceRate: number;
+}
+
+export interface ReportsTimelinePoint {
+  date: string;
+  applications: number;
+  interviews: number;
+  offers: number;
+  hires: number;
+  rejections: number;
+}
+
+export interface ReportsDistributionItem {
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ReportsSkillDemand {
+  skill: string;
+  demandScore: number;
 }
 
 export interface ReportsResponse {
@@ -261,15 +290,50 @@ export interface ReportsResponse {
       totalApplications: number;
       interviewsScheduled: number;
       offersExtended: number;
+      hiredCandidates: number;
+      activePipelineCandidates: number;
+      offerAcceptanceRate: number;
+      overallConversionRate: number;
+      avgApplicationsPerJob: number;
+      avgTimeToHireDays: number;
     };
     funnel: {
       pending: number;
       reviewing: number;
       shortlisted: number;
       interview: number;
+      offered: number;
       accepted: number;
       rejected: number;
     };
+    timeline: ReportsTimelinePoint[];
+    statusVelocityDays: {
+      reviewing: number;
+      shortlisted: number;
+      interview: number;
+      offered: number;
+      accepted: number;
+      rejected: number;
+    };
+    conversion: {
+      pendingToReviewing: number;
+      reviewingToShortlisted: number;
+      shortlistedToInterview: number;
+      interviewToOffered: number;
+      offeredToAccepted: number;
+      acceptancePerApplication: number;
+      rejectionPerApplication: number;
+    };
+    bottlenecks: {
+      biggestDropStage: string;
+      biggestDropRate: number;
+      averageDecisionDays: number;
+    };
+    distributions: {
+      byJobType: ReportsDistributionItem[];
+      byExperienceLevel: ReportsDistributionItem[];
+    };
+    skillsDemand: ReportsSkillDemand[];
     jobPerformance: JobPerformanceData[];
     timeToHireDays: number;
   };

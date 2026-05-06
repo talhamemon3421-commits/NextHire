@@ -7,6 +7,7 @@ import { ApplicationsPage } from "../features/applications/pages/ApplicationsPag
 import { InterviewsPage } from "../features/interviews/pages/InterviewsPage";
 import { CandidatesPage } from "../features/candidates/pages/CandidatesPage";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
+import { SettingsPage } from "../features/settings/pages/SettingsPage";
 import { MainLayout } from "./MainLayout";
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
         <Route path="/interviews" element={<InterviewsPage />} />
         <Route path="/candidates" element={<CandidatesPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

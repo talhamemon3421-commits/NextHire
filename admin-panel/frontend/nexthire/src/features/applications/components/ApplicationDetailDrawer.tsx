@@ -14,6 +14,11 @@ import {
   ChevronRight,
   FileText,
   Loader2,
+  Zap,
+  Target,
+  BrainCircuit,
+  MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import {
   updateApplicationStatus,
@@ -22,26 +27,28 @@ import {
   type ApplicationStatus,
   type AIRecommendation,
 } from "../api/applicationsApi";
+import { cn } from "@/shared/lib/cn";
+import { Button } from "@/shared/components/ui/Button";
 
 const STATUS_CONFIG: Record<ApplicationStatus, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
-  reviewing: { label: "Reviewing", color: "text-blue-700", bg: "bg-blue-50 border-blue-200", icon: Eye },
-  shortlisted: { label: "Shortlisted", color: "text-purple-700", bg: "bg-purple-50 border-purple-200", icon: UserCheck },
-  interview: { label: "Interview", color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200", icon: CalendarCheck },
-  accepted: { label: "Accepted", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
-  rejected: { label: "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: XCircle },
+  pending: { label: "Pending", color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20", icon: Clock },
+  reviewing: { label: "Reviewing", color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20", icon: Eye },
+  shortlisted: { label: "Shortlisted", color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20", icon: UserCheck },
+  interview: { label: "Interview", color: "text-indigo-500", bg: "bg-indigo-500/10 border-indigo-500/20", icon: CalendarCheck },
+  accepted: { label: "Accepted", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20", icon: CheckCircle2 },
+  rejected: { label: "Rejected", color: "text-red-500", bg: "bg-red-500/10 border-red-500/20", icon: XCircle },
 };
 
 const VALID_TRANSITIONS: Record<string, { status: ApplicationStatus; label: string; variant: string }[]> = {
   pending: [{ status: "reviewing", label: "Start Review", variant: "bg-blue-600 hover:bg-blue-700 text-white" }],
   reviewing: [
     { status: "shortlisted", label: "Shortlist", variant: "bg-purple-600 hover:bg-purple-700 text-white" },
-    { status: "rejected", label: "Reject", variant: "bg-red-100 hover:bg-red-200 text-red-700" },
+    { status: "rejected", label: "Reject", variant: "bg-red-500/10 hover:bg-red-500/20 text-red-500" },
   ],
   shortlisted: [{ status: "interview", label: "Schedule Interview", variant: "bg-indigo-600 hover:bg-indigo-700 text-white" }],
   interview: [
     { status: "accepted", label: "Accept", variant: "bg-emerald-600 hover:bg-emerald-700 text-white" },
-    { status: "rejected", label: "Reject", variant: "bg-red-100 hover:bg-red-200 text-red-700" },
+    { status: "rejected", label: "Reject", variant: "bg-red-500/10 hover:bg-red-500/20 text-red-500" },
   ],
 };
 
@@ -79,7 +86,6 @@ export function ApplicationDetailDrawer({ application, onClose, onUpdated }: Pro
     name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
 
   const handleAction = async (targetStatus: ApplicationStatus) => {
-    // If we need extra input, show the form first
     if (targetStatus === "interview" && !pendingAction) {
       setPendingAction("interview");
       return;
@@ -128,64 +134,76 @@ export function ApplicationDetailDrawer({ application, onClose, onUpdated }: Pro
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[100] animate-in fade-in duration-300" onClick={onClose} />
 
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-white z-50 shadow-2xl overflow-y-auto animate-slide-in-right">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold text-slate-900">Application Details</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition">
-            <X className="w-5 h-5 text-slate-500" />
+      <div className="fixed right-0 top-0 h-full w-full max-w-xl bg-card z-[110] shadow-2xl border-l border-border/50 flex flex-col animate-slide-in-right">
+        
+        <div className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border px-8 py-6 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-xl font-black tracking-tight uppercase tracking-[0.1em]">Application Intel</h2>
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">Recruitment Pipeline v4.0</p>
+          </div>
+          <button onClick={onClose} className="p-3 hover:bg-accent rounded-2xl transition-all duration-300 hover:rotate-90 text-muted-foreground">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-6">
-          {/* ── Applicant Info ── */}
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-lg font-bold shrink-0">
+        <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+          
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 p-6 bg-accent/20 rounded-[2.5rem] border border-border shadow-inner">
+            <div className="w-20 h-20 rounded-3xl bg-primary/10 text-primary flex items-center justify-center text-2xl font-black shadow-lg border border-primary/20 shrink-0">
               {getInitials(app.applicant?.name)}
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-slate-900">{app.applicant?.name}</h3>
-              <div className="space-y-1 mt-1.5">
+            <div className="flex-1 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-black tracking-tight">{app.applicant?.name}</h3>
+                  <div className={`mt-2 flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${cfg.bg} ${cfg.color}`}>
+                    <StatusIcon className="w-3.5 h-3.5" />
+                    {cfg.label}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
                 {app.applicant?.email && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Mail className="w-3.5 h-3.5" /> {app.applicant.email}
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
+                    <Mail className="w-3.5 h-3.5 text-primary" /> {app.applicant.email}
                   </div>
                 )}
                 {app.applicant?.phone && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Phone className="w-3.5 h-3.5" /> {app.applicant.phone}
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground">
+                    <Phone className="w-3.5 h-3.5 text-primary" /> {app.applicant.phone}
                   </div>
                 )}
                 {app.applicant?.location && (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <MapPin className="w-3.5 h-3.5" /> {app.applicant.location}
+                  <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground sm:col-span-2">
+                    <MapPin className="w-3.5 h-3.5 text-primary" /> {app.applicant.location}
                   </div>
                 )}
               </div>
             </div>
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
-              <StatusIcon className="w-3.5 h-3.5" />
-              {cfg.label}
+          </div>
+
+          <div className="relative group overflow-hidden rounded-[2rem] border border-primary/20 bg-gradient-to-br from-primary/10 via-transparent to-transparent p-6 shadow-sm">
+            <div className="absolute top-0 right-0 p-6 opacity-10">
+              <Target className="w-24 h-24 text-primary" />
+            </div>
+            <div className="relative z-10">
+              <div className="text-[10px] text-primary font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                <ShieldCheck className="w-3 h-3" /> Targeted Position
+              </div>
+              <div className="text-lg font-black text-foreground">{app.job?.title}</div>
             </div>
           </div>
 
-          {/* Job applied for */}
-          <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-200/60">
-            <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1">Applied for</div>
-            <div className="text-sm font-semibold text-slate-800">{app.job?.title}</div>
-          </div>
-
-          {/* ── Skills ── */}
           {app.applicant?.skills && app.applicant.skills.length > 0 && (
-            <div>
-              <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Skills</div>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-4">
+              <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                <Zap className="w-3 h-3 text-amber-500" /> Skill Matrix
+              </div>
+              <div className="flex flex-wrap gap-2">
                 {app.applicant.skills.map((s, i) => (
-                  <span key={i} className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium border border-blue-100">
+                  <span key={i} className="px-4 py-2 bg-accent/30 text-foreground rounded-xl text-xs font-black border border-border shadow-sm hover:border-primary/30 transition-colors">
                     {s}
                   </span>
                 ))}
@@ -193,89 +211,161 @@ export function ApplicationDetailDrawer({ application, onClose, onUpdated }: Pro
             </div>
           )}
 
-          {/* ── Cover Letter ── */}
           {app.coverLetter && (
-            <div>
-              <div className="flex items-center gap-2 text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-2">
-                <FileText className="w-3.5 h-3.5" /> Cover Letter
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] ml-1">
+                <FileText className="w-3.5 h-3.5 text-primary" /> Candidate Brief
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-700 leading-relaxed border border-slate-200/60">
-                {app.coverLetter}
+              <div className="bg-accent/20 rounded-[2rem] p-6 text-sm text-foreground/80 font-medium leading-relaxed border border-border shadow-inner italic">
+                "{app.coverLetter}"
               </div>
             </div>
           )}
 
-          {/* ── Interview Info ── */}
           {app.interview?.date && (
-            <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
-              <div className="text-[11px] text-indigo-500 font-semibold uppercase tracking-wider mb-2">Interview Scheduled</div>
-              <div className="text-sm font-medium text-indigo-900">
-                {new Date(app.interview.date).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+            <div className="bg-indigo-500/10 rounded-[2rem] p-6 border border-indigo-500/20 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500">
+                <CalendarCheck className="w-20 h-20 text-indigo-500" />
               </div>
-              {app.interview.link && (
-                <a
-                  href={app.interview.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-indigo-600 underline mt-1 inline-block"
-                >
-                  Join meeting link
-                </a>
-              )}
+              <div className="relative z-10">
+                <div className="text-[10px] text-indigo-500 font-black uppercase tracking-widest mb-3">Interview Scheduled</div>
+                <div className="text-lg font-black text-foreground">
+                  {new Date(app.interview.date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </div>
+                {app.interview.link && (
+                  <a
+                    href={app.interview.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-4 hover:underline"
+                  >
+                    Launch Meeting Space <ChevronRight className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
             </div>
           )}
 
-          {/* ── Hiring Notes ── */}
           {app.hiringNotes && (
-            <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-              <div className="text-[11px] text-emerald-500 font-semibold uppercase tracking-wider mb-2">Hiring Notes</div>
-              <div className="text-sm text-emerald-900">{app.hiringNotes}</div>
+            <div className="bg-emerald-500/10 rounded-[2rem] p-6 border border-emerald-500/20">
+              <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                <MessageSquare className="w-3.5 h-3.5" /> Hiring Intel
+              </div>
+              <div className="text-sm font-bold text-foreground leading-relaxed">{app.hiringNotes}</div>
             </div>
           )}
 
-          {/* ── Status Timeline ── */}
+          <div className="space-y-6">
+            <Button
+              onClick={handleAIRecommendation}
+              disabled={isLoadingAI}
+              variant="outline"
+              className="w-full h-auto py-5 rounded-[2rem] border-primary/20 bg-primary/5 hover:bg-primary/10 group overflow-hidden relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                 {isLoadingAI ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                ) : (
+                  <>
+                    <BrainCircuit className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Engage Neural Assessment</span>
+                  </>
+                )}
+              </div>
+            </Button>
+
+            {aiResult && (
+              <div className="bg-accent/30 rounded-[2.5rem] p-8 border border-border shadow-2xl space-y-8 animate-in zoom-in duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Match Potential</div>
+                    <div className="flex items-end gap-1">
+                      <span className="text-5xl font-black text-primary tracking-tighter">{aiResult.score}</span>
+                      <span className="text-lg font-bold text-muted-foreground/30 mb-2">/100</span>
+                    </div>
+                  </div>
+                  <div className={cn(
+                    "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl",
+                    aiResult.recommendation === "yes" ? "bg-emerald-500 text-white shadow-emerald-500/20" : 
+                    aiResult.recommendation === "maybe" ? "bg-amber-500 text-white shadow-amber-500/20" : 
+                    "bg-red-500 text-white shadow-red-500/20"
+                  )}>
+                    Verdict: {aiResult.recommendation}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-card rounded-3xl border border-border/50 text-sm font-bold leading-relaxed shadow-inner italic">
+                  "{aiResult.summary}"
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">Key Strengths</div>
+                    <ul className="space-y-3">
+                      {aiResult.strengths.map((s, i) => (
+                        <li key={i} className="flex items-start gap-3 text-xs font-bold text-foreground/80">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest ml-1">Critical Gaps</div>
+                    <ul className="space-y-3">
+                      {aiResult.weaknesses.map((w, i) => (
+                        <li key={i} className="flex items-start gap-3 text-xs font-bold text-foreground/80">
+                          <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+                          {w}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {app.statusHistory && app.statusHistory.length > 0 && (
-            <div>
-              <div className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-3">Status History</div>
-              <div className="space-y-0">
+            <div className="space-y-6">
+              <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] ml-1">Lifecycle Tracking</div>
+              <div className="space-y-6 relative ml-4">
+                <div className="absolute left-[-1.1rem] top-4 bottom-4 w-px bg-border/50" />
                 {app.statusHistory.map((entry, idx) => {
                   const entryCfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.pending;
                   const EntryIcon = entryCfg.icon;
                   return (
-                    <div key={idx} className="flex gap-3">
-                      {/* Timeline line */}
-                      <div className="flex flex-col items-center">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${entryCfg.bg}`}>
-                          <EntryIcon className={`w-3.5 h-3.5 ${entryCfg.color}`} />
-                        </div>
-                        {idx < app.statusHistory.length - 1 && (
-                          <div className="w-px flex-1 bg-slate-200 min-h-[20px]" />
-                        )}
+                    <div key={idx} className="relative pl-6">
+                      <div className={cn(
+                        "absolute left-[-2rem] top-0 w-8 h-8 rounded-xl flex items-center justify-center border shadow-sm z-10",
+                        entryCfg.bg
+                      )}>
+                        <EntryIcon className={cn("w-4 h-4", entryCfg.color)} />
                       </div>
-                      <div className="pb-4">
-                        <div className={`text-xs font-semibold ${entryCfg.color}`}>
+                      <div>
+                        <div className={cn("text-[10px] font-black uppercase tracking-widest", entryCfg.color)}>
                           {entryCfg.label}
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-[10px] font-bold text-muted-foreground mt-1">
                           {new Date(entry.createdAt).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
-                          {entry.changedBy &&
-                            typeof entry.changedBy === "object" &&
-                            ` · by ${entry.changedBy.name}`}
+                          {entry.changedBy && typeof entry.changedBy === "object" && (
+                            <span className="opacity-50"> · System Operator: {entry.changedBy.name}</span>
+                          )}
                         </div>
                         {entry.note && (
-                          <div className="text-xs text-slate-600 mt-1 bg-slate-50 rounded-lg px-3 py-2">
+                          <div className="text-[11px] font-medium text-foreground/70 mt-2 bg-accent/10 rounded-xl px-4 py-2 border border-border/30">
                             {entry.note}
                           </div>
                         )}
@@ -287,181 +377,114 @@ export function ApplicationDetailDrawer({ application, onClose, onUpdated }: Pro
             </div>
           )}
 
-          {/* ── AI Recommendation ── */}
-          <div>
-            <button
-              onClick={handleAIRecommendation}
-              disabled={isLoadingAI}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 text-violet-700 rounded-xl text-sm font-medium hover:from-violet-100 hover:to-indigo-100 transition-all disabled:opacity-50"
-            >
-              {isLoadingAI ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing with AI...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Get AI Assessment
-                </>
-              )}
-            </button>
+        </div>
 
-            {aiResult && (
-              <div className="mt-3 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-xl p-4 border border-violet-200 space-y-3">
-                {/* Score + Recommendation */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="text-2xl font-bold text-violet-800">{aiResult.score}</div>
-                    <div className="text-xs text-violet-500">/100</div>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-lg text-xs font-bold uppercase ${
-                      aiResult.recommendation === "yes"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : aiResult.recommendation === "maybe"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {aiResult.recommendation}
-                  </span>
-                </div>
-
-                {/* Summary */}
-                <p className="text-sm text-slate-700">{aiResult.summary}</p>
-
-                {/* Strengths */}
-                <div>
-                  <div className="text-[11px] font-semibold text-emerald-600 uppercase mb-1">Strengths</div>
-                  <ul className="space-y-1">
-                    {aiResult.strengths.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Weaknesses */}
-                <div>
-                  <div className="text-[11px] font-semibold text-red-600 uppercase mb-1">Weaknesses</div>
-                  <ul className="space-y-1">
-                    {aiResult.weaknesses.map((w, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
-                        <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                        {w}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── Actions ── */}
-          {actions.length > 0 && (
-            <div className="border-t border-slate-200 pt-5 space-y-3">
-              {/* Optional note */}
+        {actions.length > 0 && (
+          <div className="sticky bottom-0 bg-card/95 backdrop-blur-md border-t border-border p-8 space-y-6">
+            {!pendingAction && (
               <input
                 type="text"
-                placeholder="Add a note (optional)..."
+                placeholder="Attach tactical note to status change..."
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                className="w-full px-6 py-4 bg-accent/30 border border-border rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-inner outline-none"
               />
+            )}
 
-              {/* Interview form */}
-              {pendingAction === "interview" && (
-                <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-200 space-y-3">
-                  <div className="text-xs font-semibold text-indigo-700">Schedule Interview</div>
+            {pendingAction === "interview" && (
+              <div className="bg-indigo-500/10 rounded-[2rem] p-6 border border-indigo-500/20 space-y-6 animate-in slide-in-from-bottom duration-300">
+                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                  <CalendarCheck className="w-4 h-4" /> Finalize Interview Parameters
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="datetime-local"
                     value={interviewDate}
                     onChange={(e) => setInterviewDate(new Date(e.target.value).toISOString())}
-                    className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 [color-scheme:dark]"
                     min={new Date().toISOString().slice(0, 16)}
                   />
                   <input
                     type="url"
-                    placeholder="Meeting link (optional)"
+                    placeholder="Virtual HQ Link"
                     value={interviewLink}
                     onChange={(e) => setInterviewLink(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-4 py-3 bg-card border border-border rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
-                  <button
-                    onClick={() => handleAction("interview")}
-                    disabled={isUpdating || !interviewDate}
-                    className="w-full py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                </div>
+                <Button
+                  onClick={() => handleAction("interview")}
+                  disabled={isUpdating || !interviewDate}
+                  className="w-full h-auto py-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-black uppercase tracking-widest"
+                >
+                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CalendarCheck className="w-4 h-4 mr-2" />}
+                  CONFIRM SCHEDULE
+                </Button>
+              </div>
+            )}
+
+            {(pendingAction === "accepted" || pendingAction === "rejected") && (
+              <div className={cn(
+                "rounded-[2rem] p-6 border space-y-6 animate-in slide-in-from-bottom duration-300",
+                pendingAction === "accepted" ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20"
+              )}>
+                <div className={cn(
+                  "text-[10px] font-black uppercase tracking-widest flex items-center gap-2",
+                  pendingAction === "accepted" ? "text-emerald-500" : "text-red-500"
+                )}>
+                  <ShieldCheck className="w-4 h-4" /> Execution Feedback Required
+                </div>
+                <textarea
+                  placeholder="Elaborate on the hiring decision..."
+                  value={hiringNotes}
+                  onChange={(e) => setHiringNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-6 py-4 bg-card border border-border rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none shadow-inner"
+                />
+                <Button
+                  onClick={() => handleAction(pendingAction)}
+                  disabled={isUpdating || !hiringNotes.trim()}
+                  className={cn(
+                    "w-full h-auto py-4 rounded-xl font-black uppercase tracking-widest",
+                    pendingAction === "accepted" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"
+                  )}
+                >
+                  {isUpdating && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                  {pendingAction === "accepted" ? "CONFIRM ONBOARDING" : "CONFIRM TERMINATION"}
+                </Button>
+              </div>
+            )}
+
+            {!pendingAction && (
+              <div className="flex gap-4">
+                {actions.map((action) => (
+                  <Button
+                    key={action.status}
+                    onClick={() => handleAction(action.status)}
+                    disabled={isUpdating}
+                    className={cn(
+                      "flex-1 h-auto py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl border-0",
+                      action.variant
+                    )}
                   >
-                    {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarCheck className="w-4 h-4" />}
-                    Confirm Interview
-                  </button>
-                </div>
-              )}
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+            )}
 
-              {/* Hiring notes form */}
-              {(pendingAction === "accepted" || pendingAction === "rejected") && (
-                <div className={`rounded-xl p-4 border space-y-3 ${
-                  pendingAction === "accepted" ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"
-                }`}>
-                  <div className={`text-xs font-semibold ${
-                    pendingAction === "accepted" ? "text-emerald-700" : "text-red-700"
-                  }`}>
-                    Hiring Notes (required)
-                  </div>
-                  <textarea
-                    placeholder="Add your hiring notes..."
-                    value={hiringNotes}
-                    onChange={(e) => setHiringNotes(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
-                  />
-                  <button
-                    onClick={() => handleAction(pendingAction)}
-                    disabled={isUpdating || !hiringNotes.trim()}
-                    className={`w-full py-2.5 rounded-lg text-sm font-medium transition disabled:opacity-50 flex items-center justify-center gap-2 ${
-                      pendingAction === "accepted"
-                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                        : "bg-red-600 text-white hover:bg-red-700"
-                    }`}
-                  >
-                    {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {pendingAction === "accepted" ? "Confirm Accept" : "Confirm Reject"}
-                  </button>
-                </div>
-              )}
-
-              {/* Standard action buttons */}
-              {!pendingAction && (
-                <div className="flex gap-2">
-                  {actions.map((action) => (
-                    <button
-                      key={action.status}
-                      onClick={() => handleAction(action.status)}
-                      disabled={isUpdating}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${action.variant} disabled:opacity-50`}
-                    >
-                      {isUpdating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                      {action.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {error && (
-                <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
-                  {error}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            {error && (
+              <div className="text-[10px] font-bold text-red-500 bg-red-500/10 rounded-xl px-4 py-3 border border-red-500/20 animate-in shake duration-500">
+                <AlertCircle className="w-3 h-3 inline mr-1" /> {error}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

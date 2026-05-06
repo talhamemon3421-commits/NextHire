@@ -61,11 +61,11 @@ export function ChatbotWidget() {
   return (
     <>
       {/* Floating Toggle Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-4 right-4 z-50 md:bottom-6 md:right-6">
         {!isOpen && (
           <button 
             onClick={() => setIsOpen(true)}
-            className="w-14 h-14 bg-amber-500 hover:bg-amber-600 transition-colors shadow-xl rounded-full flex items-center justify-center animate-bounce"
+            className="h-12 w-12 md:h-14 md:w-14 bg-amber-500 hover:bg-amber-600 transition-colors shadow-xl rounded-full flex items-center justify-center animate-bounce"
             style={{ animationIterationCount: 3 }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,7 +77,7 @@ export function ChatbotWidget() {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-[380px] h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 z-50">
+        <div className="fixed inset-x-2 bottom-2 top-[76px] md:inset-auto md:bottom-6 md:right-6 md:w-[380px] md:h-[550px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 z-50">
           <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-white">
               <Sparkles className="w-5 h-5" />

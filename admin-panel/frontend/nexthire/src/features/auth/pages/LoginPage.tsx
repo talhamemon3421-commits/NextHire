@@ -2,9 +2,17 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { PlaneHeroArt } from "@/shared/visuals/PlaneHeroArt";
+import { getCompanyProfile } from "@/features/company/api/companyApi";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [company, setCompany] = React.useState<{ shortName: string; name: string; tagline: string } | null>(null);
+
+  React.useEffect(() => {
+    getCompanyProfile()
+      .then((res) => setCompany({ shortName: res.data.shortName, name: res.data.name, tagline: res.data.tagline }))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-dvh bg-[#0F172A] text-white">
@@ -22,10 +30,10 @@ export function LoginPage() {
               </div>
               <div>
                 <div className="text-sm font-semibold text-white/90">
-                  BinLaden Aero
+                  {company?.shortName || "BinLaden Aero"}
                 </div>
                 <div className="text-xs text-white/45">
-                  Training the next generation of professional pilots
+                  {company?.tagline || "Training the next generation of professional pilots"}
                 </div>
               </div>
             </div>

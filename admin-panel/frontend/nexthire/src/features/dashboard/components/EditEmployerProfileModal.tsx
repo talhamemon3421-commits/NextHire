@@ -1,7 +1,9 @@
 import React, { useState, FormEvent, useEffect } from "react";
-import { X, Loader2, CheckCircle2, Save, User as UserIcon } from "lucide-react";
+import { X, Loader2, CheckCircle2, Save, User as UserIcon, ShieldCheck, Mail, Calendar, MapPin, Phone } from "lucide-react";
 import { env } from "@/shared/config/env";
 import { updateEmployerProfile, getEmployerProfile, uploadEmployerAvatar, type UpdateEmployerProfilePayload } from "../../auth/api/employersApi";
+import { cn } from "@/shared/lib/cn";
+import { Button } from "@/shared/components/ui/Button";
 
 interface EditEmployerProfileModalProps {
   onClose: () => void;
@@ -25,9 +27,6 @@ export function EditEmployerProfileModal({ onClose, onSaved }: EditEmployerProfi
   // Read-only state
   const [isApproved, setIsApproved] = useState(false);
   const [email, setEmail] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companyWebsite, setCompanyWebsite] = useState("");
-  const [industry, setIndustry] = useState("");
   const [createdAt, setCreatedAt] = useState("");
 
   useEffect(() => {
@@ -42,9 +41,6 @@ export function EditEmployerProfileModal({ onClose, onSaved }: EditEmployerProfi
         
         setIsApproved(data.isApproved || false);
         setEmail(data.email || "");
-        setCompanyName(data.companyName || "");
-        setCompanyWebsite(data.companyWebsite || "");
-        setIndustry(data.industry || "");
         setCreatedAt(data.createdAt || "");
       } catch (err: any) {
         setError("Failed to load profile data.");
@@ -102,153 +98,170 @@ export function EditEmployerProfileModal({ onClose, onSaved }: EditEmployerProfi
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="relative bg-card rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-border/50">
 
         {/* Loading Overlay */}
         {(isSubmitting || isLoading) && !isSuccess && (
-          <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur flex flex-col items-center justify-center rounded-xl">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
-            <div className="text-lg font-bold text-slate-800">
-              {isLoading ? "Loading profile..." : "Saving changes..."}
+          <div className="absolute inset-0 z-[110] bg-background/90 backdrop-blur-lg flex flex-col items-center justify-center animate-in fade-in duration-500">
+            <div className="relative w-16 h-16 mb-6">
+              <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
+            <h3 className="text-xl font-black tracking-tight text-foreground uppercase tracking-[0.2em]">
+              {isLoading ? "Synchronizing Data" : "Updating Identity"}
+            </h3>
+          </div>
+        )}
+
+        {/* Success Overlay */}
+        {isSuccess && (
+          <div className="absolute inset-0 z-[110] bg-emerald-500 flex flex-col items-center justify-center text-white animate-in zoom-in duration-500">
+            <CheckCircle2 className="w-20 h-20 mb-6 animate-bounce" />
+            <h3 className="text-3xl font-black tracking-tighter">PROFILE UPDATED!</h3>
+            <p className="text-lg font-medium mt-2 opacity-90">Closing secure session...</p>
           </div>
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">Edit Profile</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Manage your employer account details.</p>
+        <div className="flex items-center justify-between p-8 border-b border-border/50 bg-accent/20">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner border border-primary/20">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black tracking-tight">Employer Profile</h2>
+              <p className="text-xs text-muted-foreground font-black uppercase tracking-widest mt-0.5">Secure Account Management</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-3 text-muted-foreground hover:bg-accent rounded-2xl transition-all duration-300 hover:rotate-90">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           {error && (
-            <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
+            <div className="p-4 bg-red-500/10 text-red-500 rounded-2xl text-sm font-bold border border-red-500/20 animate-in shake duration-500">
               {error}
             </div>
           )}
 
-          {isSuccess && (
-            <div className="mb-6 p-4 bg-emerald-50 text-emerald-700 rounded-lg text-sm border border-emerald-200 flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-              <div>
-                <span className="font-bold">Profile updated successfully!</span>
-              </div>
-            </div>
-          )}
+          <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-8">
 
-          <form id="edit-profile-form" onSubmit={handleSubmit} className="space-y-6">
-
-            {/* Read-only badges row */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm font-bold text-slate-700 mb-1">Account Email</div>
-                <div className="text-xs text-slate-500">{email}</div>
-              </div>
-              <div className="flex flex-col md:items-end justify-center">
-                <div className="text-sm font-bold text-slate-700 mb-1">Status</div>
-                {isApproved ? (
-                  <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 inline-flex items-center gap-1.5 w-fit"><CheckCircle2 className="w-3.5 h-3.5" /> Approved</span>
-                ) : (
-                  <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg border border-amber-200 inline-flex w-fit">Pending Approval</span>
-                )}
+            {/* Account summary cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 bg-accent/20 rounded-[2rem] border border-border/50 shadow-inner group hover:border-primary/30 transition-colors">
+                <div className="flex items-center gap-3 mb-2">
+                  <Mail className="w-4 h-4 text-primary" />
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Account Email</span>
+                </div>
+                <div className="text-sm font-bold truncate ml-7">{email}</div>
               </div>
               
-              <div>
-                <div className="text-sm font-bold text-slate-700 mb-1">Industry</div>
-                <div className="text-xs text-slate-500">{industry || "N/A"}</div>
-              </div>
-              <div className="md:text-right">
-                <div className="text-sm font-bold text-slate-700 mb-1">Member Since</div>
-                <div className="text-xs text-slate-500">
-                  {createdAt ? new Date(createdAt).toLocaleDateString() : "N/A"}
+              <div className="p-5 bg-accent/20 rounded-[2rem] border border-border/50 shadow-inner flex flex-col justify-between group hover:border-primary/30 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Verification</span>
+                  </div>
+                  {isApproved ? (
+                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[9px] font-black rounded-lg border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Approved
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[9px] font-black rounded-lg border border-amber-500/20 uppercase tracking-widest">Pending</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground/50" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Since {createdAt ? new Date(createdAt).toLocaleDateString() : "N/A"}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Profile Picture */}
-            <div className="flex items-center gap-5">
-              <div className="relative w-16 h-16 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0 group flex items-center justify-center">
-                {profilePicture ? (
-                  <img src={profilePicture.startsWith('/api') ? `${env.apiBaseUrl}${profilePicture.substring(4)}` : profilePicture} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <UserIcon className="w-8 h-8 text-slate-300" />
-                )}
-                {isUploadingAvatar && (
-                  <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                  </div>
-                )}
+            {/* Profile Picture Section */}
+            <div className="flex flex-col sm:flex-row items-center gap-8 p-6 bg-primary/5 rounded-[2rem] border border-primary/10">
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-3xl bg-card border border-border overflow-hidden shrink-0 shadow-xl flex items-center justify-center transition-transform group-hover:scale-105 duration-300">
+                  {profilePicture ? (
+                    <img src={profilePicture.startsWith('/api') ? `${env.apiBaseUrl}${profilePicture.substring(4)}` : profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-10 h-10 text-muted-foreground/30" />
+                  )}
+                  {isUploadingAvatar && (
+                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+                <label className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-all border-2 border-card">
+                  <input type="file" accept="image/*" onChange={handleAvatarSelect} disabled={isUploadingAvatar} className="hidden" />
+                  <Save className="w-4 h-4" />
+                </label>
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Profile Picture</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarSelect}
-                  disabled={isUploadingAvatar}
-                  className="block w-full text-sm text-slate-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100 transition cursor-pointer"
-                />
+              <div className="flex-1 text-center sm:text-left">
+                <h3 className="text-lg font-bold">Profile Identity</h3>
+                <p className="text-xs text-muted-foreground font-medium mt-1">Upload a professional headshot. JPEG or PNG, max 2MB.</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Name */}
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Employer Name</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <UserIcon className="w-3 h-3 text-primary" /> Employer Name
+                </label>
                 <input
                   required
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full bg-accent/30 border border-border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none"
                 />
               </div>
 
               {/* Phone */}
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Phone Number</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <Phone className="w-3 h-3 text-primary" /> Phone Number
+                </label>
                 <input
                   type="text"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
-                  className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full bg-accent/30 border border-border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none"
                   placeholder="+92 300 1234567"
                 />
               </div>
 
               {/* Location */}
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Location</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <MapPin className="w-3 h-3 text-primary" /> Location
+                </label>
                 <input
                   type="text"
                   value={location}
                   onChange={e => setLocation(e.target.value)}
-                  className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full bg-accent/30 border border-border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none"
                   placeholder="e.g. Islamabad, Pakistan"
                 />
               </div>
 
               {/* Password */}
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">New Password (optional)</label>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <ShieldCheck className="w-3 h-3 text-primary" /> Security Access
+                </label>
                 <input
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   minLength={8}
-                  className="w-full bg-white text-slate-900 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full bg-accent/30 border border-border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm outline-none"
                   placeholder="Enter new 8+ character password"
                 />
               </div>
@@ -258,23 +271,23 @@ export function EditEmployerProfileModal({ onClose, onSaved }: EditEmployerProfi
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50/50">
+        <div className="p-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-end gap-4 bg-accent/30">
           <button
             onClick={onClose}
             type="button"
-            className="px-5 py-2.5 text-slate-600 font-bold text-sm hover:underline transition"
+            className="w-full sm:w-auto px-8 py-4 text-muted-foreground font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-accent transition-colors"
           >
-            Cancel
+            DISCARD
           </button>
-          <button
+          <Button
             form="edit-profile-form"
             type="submit"
             disabled={isSubmitting || isLoading}
-            className="px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+            className="w-full sm:w-auto h-auto py-4 px-10 rounded-2xl font-black uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 transition-all border-0"
           >
-            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            <Save className="w-4 h-4" /> Save Profile
-          </button>
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Save className="w-5 h-5 mr-2" />}
+            UPDATE ACCOUNT
+          </Button>
         </div>
 
       </div>

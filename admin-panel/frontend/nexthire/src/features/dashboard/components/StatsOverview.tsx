@@ -1,5 +1,5 @@
 import React from "react";
-import { TrendingUp, Minus } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import type { ReportsResponse } from "../../applications/api/applicationsApi";
 
@@ -12,41 +12,41 @@ export function StatsOverview({ data }: Props) {
     {
       title: "Active postings",
       value: data?.activeJobs ?? "-",
-      trend: "Total live",
+      trend: `${data?.avgApplicationsPerJob ?? "-"} avg apps/job`,
       trendUp: true,
     },
     {
       title: "Total applications",
       value: data?.totalApplications ?? "-",
-      trend: "All time",
+      trend: `${data?.overallConversionRate ?? "-"}% hire conversion`,
       trendUp: true,
     },
     {
-      title: "Interviews scheduled",
-      value: data?.interviewsScheduled ?? "-",
-      trend: "Active pipeline",
-      trendUp: null,
+      title: "Pipeline in progress",
+      value: data?.activePipelineCandidates ?? "-",
+      trend: `${data?.interviewsScheduled ?? "-"} interviews`,
+      trendUp: true,
     },
     {
-      title: "Offers extended",
-      value: data?.offersExtended ?? "-",
-      trend: "Accepted offers",
+      title: "Hiring velocity",
+      value: data?.avgTimeToHireDays ? `${data.avgTimeToHireDays}d` : "-",
+      trend: `${data?.offerAcceptanceRate ?? "-"}% offer acceptance`,
       trendUp: true,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {stats.map((stat, i) => (
-        <div key={i} className="bg-white rounded-xl border border-slate-200/80 p-5">
-          <div className="text-sm text-slate-500 mb-2">{stat.title}</div>
+        <div key={i} className="bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-sm font-medium text-muted-foreground mb-1">{stat.title}</div>
           <div>
-            <div className="text-4xl font-bold text-slate-900 tracking-tight my-3">{stat.value}</div>
+            <div className="text-3xl font-bold tracking-tight py-2">{stat.value}</div>
             <div className={cn(
-              "text-xs flex items-center gap-1 font-medium",
-              stat.trendUp === true ? "text-emerald-500" : "text-slate-400"
+              "text-xs flex items-center gap-1 font-semibold mt-1",
+              stat.trendUp === true ? "text-emerald-500" : "text-muted-foreground"
             )}>
-              {stat.trendUp && <TrendingUp className="w-3 h-3" />}
+              {stat.trendUp && <TrendingUp className="w-3.5 h-3.5" />}
               {stat.trend}
             </div>
           </div>

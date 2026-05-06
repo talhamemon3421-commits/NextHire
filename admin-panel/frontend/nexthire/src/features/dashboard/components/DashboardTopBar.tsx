@@ -1,26 +1,37 @@
 import React, { useState } from "react";
 import { Download, Plus } from "lucide-react";
 import { PostJobModal } from "../../jobs/components/PostJobModal";
+import { Button } from "@/shared/components/ui/Button";
 
-export function DashboardTopBar() {
+interface DashboardTopBarProps {
+  onExport?: () => void;
+}
+
+export function DashboardTopBar({ onExport }: DashboardTopBarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="flex items-center justify-between mb-3">
-      <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
-      
-      <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
-          <Download className="w-4 h-4 text-slate-400" />
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+
+      <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onExport}
+          className="flex-1 sm:flex-none gap-2"
+        >
+          <Download className="w-4 h-4" />
           Export
-        </button>
-        <button 
+        </Button>
+        <Button
+          size="sm"
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          className="flex-1 sm:flex-none gap-2 shadow-lg shadow-primary/20"
         >
           <Plus className="w-4 h-4" />
           Post a Job
-        </button>
+        </Button>
       </div>
 
       {isModalOpen && <PostJobModal onClose={() => setIsModalOpen(false)} />}
